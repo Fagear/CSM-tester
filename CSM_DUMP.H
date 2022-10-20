@@ -75,6 +75,16 @@ enum
 	PSG_UNKNOWN				// Some unknown variant of AY-compatible
 };
 
+// Test functions.
+enum
+{
+	TST_CHA = (1<<0),		// Turn on Channel A sound
+	TST_CHB = (1<<1),		// Turn on Channel B sound
+	TST_CHC = (1<<2),		// Turn on Channel C sound
+	TST_MONO = (1<<3),	// Switch downmix to mono on
+	TST_COFF = (1<<4)		// Redirect Channel C to DMA
+};
+
 // Gamepad buttons/pins.
 enum
 {
@@ -86,16 +96,6 @@ enum
 	MS_BTN_LB = (1<<4),
 	MS_BTN_MB = (1<<5),
 	MS_BTN_RB = (1<<6)
-};
-
-// Test functions.
-enum
-{
-	TST_CHA = (1<<0),		// Turn on Channel A sound
-	TST_CHB = (1<<1),		// Turn on Channel B sound
-	TST_CHC = (1<<2),		// Turn on Channel C sound
-	TST_MONO = (1<<3),	// Switch downmix to mono on
-	TST_COFF = (1<<4)		// Redirect Channel C to DMA
 };
 
 uint8_t getSingleScancode();										// Get scancode from keyboard.

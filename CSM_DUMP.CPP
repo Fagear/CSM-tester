@@ -1,4 +1,15 @@
-#include "CSM_DUMP.H"
+#include "C:\DOS\FMONSTER\AY\SOFT\CSMTEST\CSM_DUMP.H"
+
+
+uint8_t pcm_sequence[6] =
+{
+	0x00,
+	0x40,
+	0x80,
+	0xC0,
+	0xFF,
+	0x80
+};
 
 // Get scancode from keyboard.
 uint8_t getSingleScancode()
@@ -456,7 +467,7 @@ uint8_t processPageMain(uint16_t card_base)
 	printAYType(card_base);
 	resetAY(card_base);
 	// Print help.
-	printf("\n\r");
+	printf("\n\r\n\r");
 	highvideo();
 	cprintf("[R]");
 	normvideo();
@@ -575,7 +586,7 @@ void processAYOvfRegTable(uint16_t card_base)
 void processSoundMuxTest(uint16_t card_base)
 {
 	uint8_t keyscan, out_start, test_bits;
-	uint8_t mix_ctrl, port_ctrl, volume_ctrl;
+	uint8_t mix_ctrl, port_ctrl, volume_ctrl, pcm_data;
 	// Prepare screen.
 	normvideo();
 	clrscr();
@@ -607,19 +618,31 @@ void processSoundMuxTest(uint16_t card_base)
 	cprintf("DISABLED");
 	normvideo();
 	printf(" [3]");
+	gotoxy(1, out_start+4);
+	printf("PCM DAC @ 0x%03x:    ", (card_base+CSM_PCM1));
+	highvideo();
+	cprintf("STATIC  ");
+	normvideo();
+	printf(" [4]");
 	gotoxy(1, out_start+5);
+	printf("PCM DAC @ 0x%03x:    ", (card_base+CSM_PCM2));
+	highvideo();
+	cprintf("STATIC  ");
+	normvideo();
+	printf(" [5]");
+	gotoxy(1, out_start+7);
 	printf("Downmix to mono:    ");
 	highvideo();
 	cprintf("DISABLED");
 	normvideo();
 	printf(" [D]");
-	gotoxy(1, out_start+6);
+	gotoxy(1, out_start+8);
 	printf("Channel C switch:   ");
 	highvideo();
 	cprintf("DISABLED");
 	normvideo();
 	printf(" [C]");
-	gotoxy(1, out_start+7);
+	gotoxy(1, out_start+9);
 	printf("Master volume:      ");
 	highvideo();
 	cprintf("    100%");
@@ -633,6 +656,7 @@ void processSoundMuxTest(uint16_t card_base)
 	mix_ctrl = 0xFF;							// Turn off all channels
 	port_ctrl = 0xE0;
 	volume_ctrl = 0xFF;
+	pcm_data = 0;
 	writeAYReg(card_base, AY_REG_A_FREQ_FINE, 224);	// Preset ~500Hz (@1.79 MHz) for CH A
 	writeAYReg(card_base, AY_REG_A_LVL, 0x0F);	// Preset maximum amplitude CH A
 	writeAYReg(card_base, AY_REG_B_FREQ_FINE, 111);	// Preset ~1000Hz (@1.79 MHz) for CH B
@@ -647,7 +671,14 @@ void processSoundMuxTest(uint16_t card_base)
 	// Wait for keypress.
 	while(keyscan!=KBD_ESC_CODE)
 	{
-		keyscan = getSingleScancode();
+		//if(kbhit())
+		{
+			keyscan = getSingleScancode();
+		}
+		/*else
+		{
+			keyscan = 0;
+		}*/
 		if(keyscan=='1')
 		{
 			// Channel A toggle.
@@ -709,14 +740,14 @@ void processSoundMuxTest(uint16_t card_base)
 			{
 				test_bits|=TST_MONO;
 				port_ctrl|=(1<<4);
-				gotoxy(21, out_start+5);
+				gotoxy(21, out_start+7);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_MONO;
 				port_ctrl&=~(1<<4);
-				gotoxy(21, out_start+5);
+				gotoxy(21, out_start+7);
 				cprintf("DISABLED");
 			}
 		}
@@ -727,14 +758,14 @@ void processSoundMuxTest(uint16_t card_base)
 			{
 				test_bits|=TST_COFF;
 				port_ctrl&=~(1<<7);
-				gotoxy(21, out_start+6);
+				gotoxy(21, out_start+8);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_COFF;
 				port_ctrl|=(1<<7);
-				gotoxy(21, out_start+6);
+				gotoxy(21, out_start+8);
 				cprintf("DISABLED");
 			}
 		}
@@ -744,25 +775,25 @@ void processSoundMuxTest(uint16_t card_base)
 			if(volume_ctrl==0xFF)
 			{
 				volume_ctrl=0xCC;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     75%");
 			}
 			else if(volume_ctrl==0xCC)
 			{
 				volume_ctrl=0x88;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     50%");
 			}
 			else if(volume_ctrl==0x88)
 			{
 				volume_ctrl=0x44;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     25%");
 			}
 			else
 			{
 				volume_ctrl=0x00;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("      0%");
 			}
 		}
@@ -772,27 +803,59 @@ void processSoundMuxTest(uint16_t card_base)
 			if(volume_ctrl==0x00)
 			{
 				volume_ctrl=0x44;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     25%");
 			}
 			else if(volume_ctrl==0x44)
 			{
 				volume_ctrl=0x88;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     50%");
 			}
 			else if(volume_ctrl==0x88)
 			{
 				volume_ctrl=0xCC;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("     75%");
 			}
 			else
 			{
 				volume_ctrl=0xFF;
-				gotoxy(21, out_start+7);
+				gotoxy(21, out_start+9);
 				cprintf("    100%");
 			}
+		}
+		if(keyscan=='4')
+		{
+			pcm_data++;
+			if(pcm_data>=6)
+			{
+				pcm_data = 0;
+			}
+			outportb(card_base+CSM_PCM1, pcm_sequence[pcm_data]);
+			gotoxy(21, out_start+4);
+			cprintf("UPDATING");
+		}
+		else
+		{
+			gotoxy(21, out_start+4);
+			cprintf("STATIC  ");
+		}
+		if(keyscan=='5')
+		{
+			pcm_data++;
+			if(pcm_data>=6)
+			{
+				pcm_data = 0;
+			}
+			outportb(card_base+CSM_PCM2, pcm_sequence[pcm_data]);
+			gotoxy(21, out_start+5);
+			cprintf("UPDATING");
+		}
+		else
+		{
+			gotoxy(21, out_start+5);
+			cprintf("STATIC  ");
 		}
 		// Update registers after keypress.
 		writeAYReg(card_base, AY_REG_MIXER, mix_ctrl);		// Update mixer
