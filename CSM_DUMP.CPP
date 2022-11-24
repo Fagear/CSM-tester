@@ -20,13 +20,11 @@ uint8_t getSingleScancode()
 	{
 		// Wait for keypress.
 		keyscan = getch();
-		//keyscan = getchar();
 		// Detect dual-code keys.
 		if(keyscan==0x00)
 		{
 			// Skip dual-scancode keys.
 			keyscan = getch();
-			//keyscan = getchar();
 		}
 		else
 		{
@@ -113,12 +111,31 @@ uint8_t detectAYType(uint16_t in_port)
 	}
 	// Check for YM2149.
 	writeAYReg(in_port, AY_REG_C_LVL, 0xFF);		// This register should mask to 0x1F right away on AY...
-	io_data = inportb(in_port+CSM_AY_DATA);			// Read it back without re-addressing
+	io_data = inportb(in_port+CSM_AY_DATA);		// Read it back without re-addressing
 	if(io_data==0xFF)
 	{
-		// YM2149 reads the same right after write without masking if register address was not changed.
-		resetAY(in_port);
-		return PSG_YM2149;
+		// YM2149 and AVR-AY read the same right after write without masking if register address was not changed.
+		// Check if MSBs mask to 0x0F after re-addressing.
+		writeAYReg(in_port, AY_REG_A_FREQ_ROUGH, 0xFF);
+		writeAYReg(in_port, AY_REG_B_FREQ_ROUGH, 0xFF);
+		writeAYReg(in_port, AY_REG_C_FREQ_ROUGH, 0xFF);
+		if((readAYReg(in_port, AY_REG_A_FREQ_ROUGH)==0x0F)&&
+			(readAYReg(in_port, AY_REG_B_FREQ_ROUGH)==0x0F)&&
+			(readAYReg(in_port, AY_REG_C_FREQ_ROUGH)==0x0F))
+		{
+			// 0xFF masks to 0x0F after re-addressing on YM2149.
+			resetAY(in_port);
+			return PSG_YM2149;
+		}
+		else
+		{
+			// May also check out-of-bound registers:
+			// for 0x3f, 0x7f, 0xbf readbacks
+			// but there is no reason (yet).
+			// It is AVR-AY emulator.
+			resetAY(in_port);
+			return PSG_AVR_AY;
+		}
 	}
 	else if(io_data!=0x1F)
 	{
@@ -187,6 +204,10 @@ void printAYType(uint16_t in_port)
 		{
 			cprintf("KC89C72");
 		}
+		else if(temp==PSG_AVR_AY)
+		{
+			cprintf("AVR-AY emulator");
+		}
 		else
 		{
 			cprintf("unknown");
@@ -197,6 +218,10 @@ void printAYType(uint16_t in_port)
 		if(temp==PSG_YM2149)
 		{
 			printf("\n\rDMA transfers to DAC will not work!");
+		}
+		else if(temp==PSG_AVR_AY)
+		{
+			printf("\n\rMixer switching, volume control and DMA transfers to DAC will not work!");
 		}
 		else if(temp==PSG_AY8930)
 		{
@@ -440,7 +465,7 @@ void printGamepadState(uint16_t in_port, uint8_t in_ofs)
 // Print header.
 void printHeader()
 {
-	printf("Covox Sound Master (CSM) testing utility v1.3\n\r");
+	printf("Covox Sound Master (CSM) testing utility v%u.%u\n\r", VER_MAJOR, VER_MINOR);
 	printf("by Maksim Kryukov aka Fagear (fagear@mail.ru), 2022\n\r");
 }
 
@@ -653,18 +678,18 @@ void processSoundMuxTest(uint16_t card_base)
 	resetAY(card_base);
 	test_bits = 0;
 	// Preset frequencies and amplitudes.
-	mix_ctrl = 0xFF;							// Turn off all channels
+	mix_ctrl = 0xFF;											// Turn off all channels
 	port_ctrl = 0xE0;
 	volume_ctrl = 0xFF;
 	pcm_data = 0;
 	writeAYReg(card_base, AY_REG_A_FREQ_FINE, 224);	// Preset ~500Hz (@1.79 MHz) for CH A
-	writeAYReg(card_base, AY_REG_A_LVL, 0x0F);	// Preset maximum amplitude CH A
+	writeAYReg(card_base, AY_REG_A_LVL, 0x0F);		// Preset maximum amplitude CH A
 	writeAYReg(card_base, AY_REG_B_FREQ_FINE, 111);	// Preset ~1000Hz (@1.79 MHz) for CH B
-	writeAYReg(card_base, AY_REG_B_LVL, 0x0F);	// Preset maximum amplitude CH B
-	writeAYReg(card_base, AY_REG_C_FREQ_FINE, 74);		// Preset ~1500Hz (@1.79 MHz) for CH C
-	writeAYReg(card_base, AY_REG_C_LVL, 0x0F);  // Preset maximum amplitude CH C
+	writeAYReg(card_base, AY_REG_B_LVL, 0x0F);		// Preset maximum amplitude CH B
+	writeAYReg(card_base, AY_REG_C_FREQ_FINE, 74);	// Preset ~1500Hz (@1.79 MHz) for CH C
+	writeAYReg(card_base, AY_REG_C_LVL, 0x0F);		// Preset maximum amplitude CH C
 	writeAYReg(card_base, AY_REG_MIXER, mix_ctrl);	// Apply mixer settings
-	writeAYReg(card_base, AY_REG_IO_A, volume_ctrl);	// Turn volume up (via LM13600, connected to IO Port A).
+	writeAYReg(card_base, AY_REG_IO_A, volume_ctrl);// Turn volume up (via LM13600, connected to IO Port A)
 	writeAYReg(card_base, AY_REG_IO_B, port_ctrl);	// Apply IO port B (mux control)
 
 	keyscan = 0;

@@ -72,6 +72,7 @@ enum
 	PSG_AY8930,				// AY8930 detected
 	PSG_YM2149,				// YM2149 detected
 	PSG_KC89C72,			// KC89C72 detected
+	PSG_AVR_AY,				// ATmega AY-emulator
 	PSG_UNKNOWN				// Some unknown variant of AY-compatible
 };
 
@@ -96,6 +97,13 @@ enum
 	MS_BTN_LB = (1<<4),
 	MS_BTN_MB = (1<<5),
 	MS_BTN_RB = (1<<6)
+};
+
+// Version info.
+enum
+{
+	VER_MAJOR = 1,
+	VER_MINOR = 4
 };
 
 uint8_t getSingleScancode();										// Get scancode from keyboard.
