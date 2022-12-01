@@ -89,21 +89,21 @@ enum
 // Gamepad buttons/pins.
 enum
 {
-	GP_BTN_UP = (1<<1),
-	GP_BTN_DOWN	= (1<<0),
-	GP_BTN_LEFT	= (1<<3),
-	GP_BTN_RIGHT = (1<<2),
-	GP_BTN_FIRE	= (1<<4),
-	MS_BTN_LB = (1<<4),
-	MS_BTN_MB = (1<<5),
-	MS_BTN_RB = (1<<6)
+	GP_BTN_UP = (1<<1),		// Gamepad/joystick: directional, up
+	GP_BTN_DOWN	= (1<<0),	// Gamepad/joystick: directional, down
+	GP_BTN_LEFT	= (1<<3),	// Gamepad/joystick: directional, left
+	GP_BTN_RIGHT = (1<<2),	// Gamepad/joystick: directional, right
+	GP_BTN_FIRE	= (1<<4),	// Gamepad/joystick: action/fire
+	MS_BTN_LB = (1<<4),		// Mouse: left button
+	MS_BTN_MB = (1<<5),		// Mouse: middle button
+	MS_BTN_RB = (1<<6)		// Mouse: right button
 };
 
 // Version info.
 enum
 {
 	VER_MAJOR = 1,
-	VER_MINOR = 4
+	VER_MINOR = 5
 };
 
 uint8_t getSingleScancode();										// Get scancode from keyboard.
@@ -124,5 +124,6 @@ void processAYStdRegTable(uint16_t card_base);				// Print register table page.
 void processAYOvfRegTable(uint16_t card_base);				// Print out-of-bound AY register table page.
 void processSoundMuxTest(uint16_t card_base);				// Print sound and mixer testing page.
 void processGamepadTest(uint16_t card_base);					// Print gamepad testing page.
+void processAddressSpamTest(uint16_t card_base);				// Print single port testing page.
 
 int main(int argc, const char* argv[]);

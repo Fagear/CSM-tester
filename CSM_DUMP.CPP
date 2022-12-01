@@ -11,6 +11,8 @@ uint8_t pcm_sequence[6] =
 	0x80
 };
 
+uint8_t detect_stage;
+
 // Get scancode from keyboard.
 uint8_t getSingleScancode()
 {
@@ -85,12 +87,14 @@ uint8_t detectAYType(uint16_t in_port)
 	writeAYReg(in_port, AY_R0, 0xA5);	// REG 0b00000000, DATA 0b10100101
 	writeAYReg(in_port, AY_RC, 0x5A);	// REG 0b00001100, DATA 0b01011010
 	writeAYReg(in_port, AY_R3, 0x0F);	// REG 0b00000011, DATA 0b00001111
+	detect_stage = 0;
 	// Read first pattern.
 	io_data = readAYReg(in_port, AY_R0);
 	if(io_data!=0xA5)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
+		detect_stage = 1;
 		return PSG_NONE;
 	}
 	// Read second pattern.
@@ -99,6 +103,7 @@ uint8_t detectAYType(uint16_t in_port)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
+		detect_stage = 2;
 		return PSG_NONE;
 	}
 	// Read third pattern.
@@ -107,8 +112,10 @@ uint8_t detectAYType(uint16_t in_port)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
+		detect_stage = 3;
 		return PSG_NONE;
 	}
+	detect_stage = 4;
 	// Check for YM2149.
 	writeAYReg(in_port, AY_REG_C_LVL, 0xFF);		// This register should mask to 0x1F right away on AY...
 	io_data = inportb(in_port+CSM_AY_DATA);		// Read it back without re-addressing
@@ -176,7 +183,7 @@ void printAYType(uint16_t in_port)
 	{
 		printf("No AY-type PSG detected at ");
 		highvideo();
-		cprintf("%04xh", in_port);
+		cprintf("%04xh (failed at stage %u)", in_port, detect_stage);
 		normvideo();
 	}
 	else
@@ -510,6 +517,10 @@ uint8_t processPageMain(uint16_t card_base)
 	normvideo();
 	printf(": gamepad state\n\r");
 	highvideo();
+	cprintf("[D]");
+	normvideo();
+	printf(": addressing tests\n\r");
+	highvideo();
 	cprintf("[Esc]");
 	normvideo();
 	printf(": exit\n\r\n\r");
@@ -521,7 +532,8 @@ uint8_t processPageMain(uint16_t card_base)
 		if((keyscan=='r')||(keyscan=='R')
 			||(keyscan=='e')||(keyscan=='E')
 			||(keyscan=='s')||(keyscan=='S')
-			||(keyscan=='g')||(keyscan=='G'))
+			||(keyscan=='g')||(keyscan=='G')
+			||(keyscan=='d')||(keyscan=='D'))
 		{
 			break;
 		}
@@ -924,6 +936,142 @@ void processGamepadTest(uint16_t card_base)
 	out_start = getSingleScancode();
 }
 
+// Print single port testing page.
+void processAddressSpamTest(uint16_t card_base)
+{
+	uint8_t out_start;
+	uint8_t keyscan;
+	uint8_t flag;
+	// Prepare screen.
+	normvideo();
+	clrscr();
+	_setcursortype(_NOCURSOR);
+	gotoxy(1, 1);
+	// Print header.
+	printHeader();
+	resetAY(card_base);
+	// Print help.
+	printf("\n\r\n\r[Esc]: back to main menu\n\r\n\r");
+	printf("Single sub-port addressing test.\n\r\n\r");
+	out_start = wherey();
+	gotoxy(1, out_start+1);
+	highvideo();
+	cprintf("[1]");
+	normvideo();
+	printf(": perform a write into AY address register 0x%03x\n\r", card_base+CSM_AY_REG);
+	gotoxy(1, out_start+2);
+	highvideo();
+	cprintf("[2]");
+	normvideo();
+	printf(": perform a write into AY data register 0x%03x\n\r", card_base+CSM_AY_DATA);
+	gotoxy(1, out_start+3);
+	highvideo();
+	cprintf("[3]");
+	normvideo();
+	printf(": perform a read from AY address register 0x%03x\n\r", card_base+CSM_AY_REG);
+	gotoxy(1, out_start+4);
+	highvideo();
+	cprintf("[4]");
+	normvideo();
+	printf(": perform a read from AY data register 0x%03x\n\r", card_base+CSM_AY_DATA);
+	gotoxy(1, out_start+5);
+	highvideo();
+	cprintf("[5]");
+	normvideo();
+	printf(": perform a write to DAC register 0x%03x\n\r", card_base+CSM_PCM1);
+	gotoxy(1, out_start+6);
+	highvideo();
+	cprintf("[6]");
+	normvideo();
+	printf(": perform a write to DAC (copy) register 0x%03x\n\r", card_base+CSM_PCM2);
+	gotoxy(1, out_start+7);
+	highvideo();
+	cprintf("[7]");
+	normvideo();
+	printf(": perform a write to IRQ clear flag 0x%03x\n\r", card_base+CSM_IRQ_CLR);
+	gotoxy(1, out_start+8);
+	highvideo();
+	cprintf("[8]");
+	normvideo();
+	printf(": perform a read from Gamepad 1 register 0x%03x\n\r", card_base+CSM_GPAD1);
+	gotoxy(1, out_start+9);
+	highvideo();
+	cprintf("[9]");
+	normvideo();
+	printf(": perform a read from Gamepad 2 register 0x%03x\n\r", card_base+CSM_GPAD2);
+	keyscan = 0;
+	// Wait for keypress.
+	while(keyscan!=KBD_ESC_CODE)
+	{
+		keyscan = getSingleScancode();
+		if(keyscan=='1')
+		{
+			// Write to AY internal register address.
+			outportb(card_base+CSM_AY_REG, 0x00);
+			keyscan = 0;
+		}
+		else if(keyscan=='2')
+		{
+			// Write to AY data register.
+			outportb(card_base+CSM_AY_DATA, 0x0F);
+			keyscan = 0;
+		}
+		else if(keyscan=='3')
+		{
+			// Read from AY data register.
+			inportb(card_base+CSM_AY_REG);
+			keyscan = 0;
+		}
+		else if(keyscan=='4')
+		{
+			// Read from AY internal register address.
+			inportb(card_base+CSM_AY_DATA);
+			keyscan = 0;
+		}
+		else if(keyscan=='5')
+		{
+			// Write to DAC data register.
+			outportb(card_base+CSM_PCM1, 0x80);
+			keyscan = 0;
+		}
+		else if(keyscan=='6')
+		{
+			// Write to DAC (copy) data register.
+			outportb(card_base+CSM_PCM2, 0x80);
+			keyscan = 0;
+		}
+		else if(keyscan=='7')
+		{
+			// Write to IRQ clear flag.
+			outportb(card_base+CSM_IRQ_CLR, 0x00);
+			keyscan = 0;
+		}
+		else if(keyscan=='8')
+		{
+			// Read from Gamepad 1 register.
+			inportb(card_base+CSM_GPAD1);
+			keyscan = 0;
+		}
+		else if(keyscan=='9')
+		{
+			// Read from Gamepad 2 register.
+			inportb(card_base+CSM_GPAD2);
+			keyscan = 0;
+		}
+		gotoxy(1, out_start+11);
+		if(flag==0)
+		{
+			printf("Update indicator: _-_-_-_-_-_");
+			flag = 1;
+		}
+		else
+		{
+			printf("Update indicator: -_-_-_-_-_-");
+			flag = 0;
+		}
+	}
+}
+
 // Main function.
 int main(int argc, const char* argv[])
 {
@@ -982,6 +1130,11 @@ int main(int argc, const char* argv[])
 		else if((keyscan=='g')||(keyscan=='G'))
 		{
 			processGamepadTest(card_base);
+			keyscan = 0;
+		}
+		else if((keyscan=='d')||(keyscan=='D'))
+		{
+			processAddressSpamTest(card_base);
 			keyscan = 0;
 		}
 	}
