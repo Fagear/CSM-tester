@@ -1,5 +1,4 @@
-#include "C:\DOS\FMONSTER\AY\SOFT\CSMTEST\CSM_DUMP.H"
-
+#include "CSM_DUMP.H"
 
 uint8_t pcm_sequence[6] =
 {
