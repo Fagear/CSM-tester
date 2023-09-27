@@ -1,6 +1,13 @@
 #include "CSM_DUMP.H"
 
-uint8_t pcm_sequence[6] =
+#ifdef __cplusplus
+	#define __CPPARGS	...
+#else
+	#define __CPPARGS
+#endif
+
+// Sample sequence for DAC.
+uint8_t pcm_sequence[PCM_SEQ_SIZE] =
 {
 	0x00,
 	0x40,
@@ -10,7 +17,74 @@ uint8_t pcm_sequence[6] =
 	0x80
 };
 
-uint8_t detect_stage;
+uint8_t dma1_seq[DMA1_SEQ_SIZE] =
+{
+  0x80, 0x80, 0x80, 0x80, 0x7d, 0x75, 0x80, 0x95, 0xa0, 0x99, 0x5a, 0x53,
+  0x6a, 0x83, 0x9c, 0x71, 0x6d, 0x9a, 0xaf, 0xaf, 0x7f, 0x53, 0x53, 0x7e,
+  0x7f, 0x73, 0x6e, 0x87, 0xaf, 0xb0, 0x8c, 0x6b, 0x63, 0x76, 0x7f, 0x74,
+  0x5c, 0x74, 0x95, 0xaa, 0xaf, 0x7f, 0x71, 0x7e, 0x7a, 0x7e, 0x5f, 0x5a,
+  0x77, 0xbc, 0xc7, 0xc2, 0xb2, 0xa9, 0xcb, 0xb5, 0xa3, 0x88, 0x86, 0xa1,
+  0xc2, 0xc3, 0xac, 0xaa, 0xb7, 0xc0, 0xb8, 0x90, 0x8f, 0x93, 0xaa, 0xba,
+  0x9e, 0x94, 0xa4, 0xa3, 0x9b, 0x73, 0x4e, 0x52, 0x61, 0x68, 0x69, 0x5b,
+  0x59, 0x68, 0x6a, 0x58, 0x45, 0x38, 0x45, 0x65, 0x6c, 0x73, 0x77, 0x7c,
+  0x9b, 0xa3, 0x76, 0x63, 0x76, 0x88, 0x93, 0x90, 0x90, 0xa6, 0xbe, 0xd2,
+  0xcc, 0xb4, 0xa5, 0xa0, 0x9a, 0x85, 0x75, 0x67, 0x8a, 0xad, 0x9b, 0x85,
+  0x70, 0x67, 0x6b, 0x5c, 0x40, 0x3d, 0x48, 0x62, 0x77, 0x6a, 0x61, 0x64,
+  0x68, 0x67, 0x5b, 0x44, 0x45, 0x59, 0x74, 0x79, 0x6f, 0x69, 0x78, 0x7e,
+  0x6e, 0x59, 0x3f, 0x40, 0x51, 0x4e, 0x40, 0x35, 0x46, 0x52, 0x42, 0x23,
+  0x0d, 0x0d, 0x0f, 0x17, 0x1c, 0x21, 0x34, 0x46, 0x4f, 0x4d, 0x3d, 0x35,
+  0x3d, 0x49, 0x4c, 0x4c, 0x49, 0x5e, 0x6f, 0x72, 0x67, 0x5a, 0x55, 0x55,
+  0x50, 0x49, 0x44, 0x46, 0x5d, 0x70, 0x70, 0x6d, 0x6e, 0x72, 0x7d, 0x80,
+  0x7c, 0x7d, 0x92, 0xaa, 0xb7, 0xb7, 0xb2, 0xba, 0xc5, 0xc5, 0xbd, 0xb8,
+  0xc3, 0xda, 0xea, 0xe1, 0xde, 0xd5, 0xdd, 0xda, 0xc7, 0xb8, 0xaf, 0xb8,
+  0xc5, 0xbf, 0xb5, 0xb5, 0xb5, 0xb9, 0xb2, 0xa4, 0x99, 0x9d, 0xad, 0xb5,
+  0xb2, 0xae, 0xb7, 0xc4, 0xc5, 0xbe, 0xbc, 0xc0, 0xcb, 0xd1, 0xce, 0xd3,
+  0xd6, 0xd9, 0xe3, 0xdf, 0xd4, 0xca, 0xc5, 0xc7, 0xc2, 0xbc, 0xb5, 0xb7,
+  0xbe, 0xbe, 0xaf, 0xa1, 0xa2, 0xa2, 0xa5, 0x9e, 0x98, 0x9d, 0xa7, 0xb0,
+  0xb5, 0xaf, 0xaa, 0xb0, 0xb4, 0xb1, 0xae, 0xad, 0xb7, 0xc2, 0xc5, 0xbd,
+  0xb5, 0xaf, 0xa8, 0x9b, 0x8b, 0x85, 0x7e, 0x80
+};
+
+uint8_t dma3_seq[DMA3_SEQ_SIZE] =
+{
+  0x80, 0x80, 0x7f, 0x80, 0x83, 0x85, 0x8d, 0x7a, 0x72, 0x7b, 0x7d, 0x88,
+  0x8c, 0x9d, 0x72, 0x65, 0x76, 0x7b, 0x8d, 0x93, 0xac, 0x6b, 0x58, 0x72,
+  0x78, 0x91, 0x9a, 0xbb, 0x64, 0x4b, 0x6e, 0x76, 0x96, 0xa0, 0xca, 0x5d,
+  0x3e, 0x69, 0x74, 0x9b, 0xa7, 0xda, 0x56, 0x31, 0x65, 0x71, 0x9f, 0xae,
+  0xe9, 0x4f, 0x25, 0x60, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f,
+  0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f,
+  0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4,
+  0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4,
+  0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f,
+  0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b,
+  0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4,
+  0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f,
+  0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f,
+  0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4,
+  0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4,
+  0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f,
+  0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b,
+  0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4,
+  0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f,
+  0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f,
+  0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4,
+  0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4,
+  0xb4, 0xf4, 0x4b, 0x1f, 0x5f, 0x6f, 0xa4, 0xb3, 0xf0, 0x4e, 0x26, 0x62,
+  0x71, 0xa0, 0xad, 0xe2, 0x54, 0x31, 0x66, 0x73, 0x9c, 0xa7, 0xd4, 0x5b,
+  0x3d, 0x6a, 0x75, 0x97, 0xa1, 0xc7, 0x61, 0x48, 0x6e, 0x77, 0x93, 0x9b,
+  0xb9, 0x67, 0x54, 0x72, 0x79, 0x8f, 0x94, 0xab, 0x6e, 0x5f, 0x76, 0x7b,
+  0x8b, 0x8e, 0x9e, 0x74, 0x6b, 0x7a, 0x7d, 0x87, 0x88, 0x90, 0x7a, 0x77,
+  0x7e, 0x7f, 0x82, 0x80, 0x80, 0x80
+};
+
+
+uint16_t card_base;
+uint32_t old_irq_ctrl;
+uint16_t int3cnt;
+uint16_t int7cnt;
+
+void interrupt (*old_irq3)(__CPPARGS);
+void interrupt (*old_irq7)(__CPPARGS);
 
 // Get scancode from keyboard.
 uint8_t getSingleScancode()
@@ -77,7 +151,7 @@ void fillAY(uint16_t in_port)
 }
 
 // Detect PSG IC type.
-uint8_t detectAYType(uint16_t in_port)
+uint8_t detectAYType(uint16_t in_port, uint8_t *detect_stage)
 {
 	uint8_t io_data;
 	// Reset all registers.
@@ -86,14 +160,14 @@ uint8_t detectAYType(uint16_t in_port)
 	writeAYReg(in_port, AY_R0, 0xA5);	// REG 0b00000000, DATA 0b10100101
 	writeAYReg(in_port, AY_RC, 0x5A);	// REG 0b00001100, DATA 0b01011010
 	writeAYReg(in_port, AY_R3, 0x0F);	// REG 0b00000011, DATA 0b00001111
-	detect_stage = 0;
+	(*detect_stage) = 0;
 	// Read first pattern.
 	io_data = readAYReg(in_port, AY_R0);
 	if(io_data!=0xA5)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
-		detect_stage = 1;
+		(*detect_stage) = 1;
 		return PSG_NONE;
 	}
 	// Read second pattern.
@@ -102,7 +176,7 @@ uint8_t detectAYType(uint16_t in_port)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
-		detect_stage = 2;
+		(*detect_stage) = 2;
 		return PSG_NONE;
 	}
 	// Read third pattern.
@@ -111,10 +185,10 @@ uint8_t detectAYType(uint16_t in_port)
 	{
 		// Read byte does not match written one.
 		resetAY(in_port);
-		detect_stage = 3;
+		(*detect_stage) = 3;
 		return PSG_NONE;
 	}
-	detect_stage = 4;
+	(*detect_stage) = 4;
 	// Check for YM2149.
 	writeAYReg(in_port, AY_REG_C_LVL, 0xFF);		// This register should mask to 0x1F right away on AY...
 	io_data = inportb(in_port+CSM_AY_DATA);		// Read it back without re-addressing
@@ -175,8 +249,9 @@ uint8_t detectAYType(uint16_t in_port)
 void printAYType(uint16_t in_port)
 {
 	uint8_t temp;
+	uint8_t detect_stage;
 	// Detect PSG type.
-	temp = detectAYType(in_port);
+	temp = detectAYType(in_port, &detect_stage);
 	// Print PSG type.
 	if(temp==PSG_NONE)
 	{
@@ -340,7 +415,7 @@ void printAYOvfReg(uint16_t in_port, uint8_t in_ofs)
 	// Cycle through ports.
 	for(i=(in_ofs+AY_R0);i<=(in_ofs+AY_RF);i++)
 	{
-		// Fill up the register.
+		// Fill up all registers.
 		writeAYReg(in_port, i, 0xFF);
 		// Read data from that AY register without re-addressing.
 		port_res = inportb(in_port+CSM_AY_DATA);
@@ -472,7 +547,7 @@ void printGamepadState(uint16_t in_port, uint8_t in_ofs)
 void printHeader()
 {
 	printf("Covox Sound Master (CSM) testing utility v%u.%u\n\r", VER_MAJOR, VER_MINOR);
-	printf("by Maksim Kryukov aka Fagear (fagear@mail.ru), 2022\n\r");
+	printf("by Maksim Kryukov aka Fagear (fagear@mail.ru), 2023\n\r");
 }
 
 // Print usage message.
@@ -622,7 +697,9 @@ void processAYOvfRegTable(uint16_t card_base)
 void processSoundMuxTest(uint16_t card_base)
 {
 	uint8_t keyscan, out_start, test_bits;
-	uint8_t mix_ctrl, port_ctrl, volume_ctrl, pcm_data;
+	uint8_t mix_ctrl, port_ctrl, volume_ctrl, pcm_idx;
+	uint8_t reg1, reg2, reg3, reg4;
+	uint32_t buf_adr;
 	// Prepare screen.
 	normvideo();
 	clrscr();
@@ -675,7 +752,7 @@ void processSoundMuxTest(uint16_t card_base)
 	gotoxy(1, out_start+8);
 	printf("Channel C switch:   ");
 	highvideo();
-	cprintf("DISABLED");
+	cprintf("   SOUND");
 	normvideo();
 	printf(" [C]");
 	gotoxy(1, out_start+9);
@@ -685,28 +762,56 @@ void processSoundMuxTest(uint16_t card_base)
 	normvideo();
 	printf(" [-][+]");
 	highvideo();
-	// Zero out all registers.
+	// Zero out all AY registers.
 	resetAY(card_base);
 	test_bits = 0;
 	// Preset frequencies and amplitudes.
-	mix_ctrl = 0xFF;											// Turn off all channels
-	port_ctrl = 0xE0;
-	volume_ctrl = 0xFF;
-	pcm_data = 0;
-	writeAYReg(card_base, AY_REG_A_FREQ_FINE, 224);	// Preset ~500Hz (@1.79 MHz) for CH A
+	mix_ctrl = 0xFF;								// Turn off all channels
+	port_ctrl = AY_IOB_DMA_DIS|AY_IOB_IRQ_DIS|AY_IOB_C_OUT;
+	volume_ctrl = 0xFF;								// Full amplitude on output
+	pcm_idx = 0;									// Set first sample in the sequence
+	writeAYReg(card_base, AY_REG_A_FREQ_FINE, 75);	// Preset ~1500Hz (@1.79 MHz) for CH A
 	writeAYReg(card_base, AY_REG_A_LVL, 0x0F);		// Preset maximum amplitude CH A
-	writeAYReg(card_base, AY_REG_B_FREQ_FINE, 111);	// Preset ~1000Hz (@1.79 MHz) for CH B
+	writeAYReg(card_base, AY_REG_B_FREQ_FINE, 112);	// Preset ~1000Hz (@1.79 MHz) for CH B
 	writeAYReg(card_base, AY_REG_B_LVL, 0x0F);		// Preset maximum amplitude CH B
-	writeAYReg(card_base, AY_REG_C_FREQ_FINE, 74);	// Preset ~1500Hz (@1.79 MHz) for CH C
+	//writeAYReg(card_base, AY_REG_C_FREQ_FINE, 224);	// Preset ~500Hz (@1.79 MHz) for CH C
+	writeAYReg(card_base, AY_REG_C_FREQ_FINE, 10);
 	writeAYReg(card_base, AY_REG_C_LVL, 0x0F);		// Preset maximum amplitude CH C
-	writeAYReg(card_base, AY_REG_MIXER, mix_ctrl);	// Apply mixer settings
-	writeAYReg(card_base, AY_REG_IO_A, volume_ctrl);// Turn volume up (via LM13600, connected to IO Port A)
-	writeAYReg(card_base, AY_REG_IO_B, port_ctrl);	// Apply IO port B (mux control)
+	writeAYReg(card_base, AY_REG_MIXER, mix_ctrl);	// Apply AY mixer settings
+	writeAYReg(card_base, AY_REG_IO_A, volume_ctrl);// Turn volume up (via LM13600, connected to AY IO Port A)
+	writeAYReg(card_base, AY_REG_IO_B, port_ctrl);	// Apply AY IO port B (mux control)
 
 	keyscan = 0;
 	// Wait for keypress.
 	while(keyscan!=KBD_ESC_CODE)
 	{
+		gotoxy(40, out_start+8);
+		cprintf("IRQ3 count: %03u, IRQ7 count: %03u", int3cnt, int7cnt);
+
+		/*buf_adr = FP_SEG(dma1_seq);
+		buf_adr = (buf_adr<<4);
+		buf_adr += FP_OFF(dma1_seq);
+
+		outportb(DMA_03REG_RST, DUMMY_WRITE);
+		reg1 = inportb(DMA_03REG_CH1ADR);
+		reg2 = inportb(DMA_03REG_CH1ADR);
+		outportb(DMA_03REG_RST, DUMMY_WRITE);
+		reg3 = inportb(DMA_03REG_CH1CNT);
+		reg4 = inportb(DMA_03REG_CH1CNT);
+
+		gotoxy(40, out_start+9);
+		cprintf("Buf: 0x%x 0x%x 0x%08x",
+				FP_SEG(dma1_seq),
+				FP_OFF(dma1_seq),
+				buf_adr);
+		gotoxy(40, out_start+10);
+		cprintf("DMA adr: 0x%02x 0x%02x, DMA cnt: 0x%02x, 0x%02x",
+				reg1,
+				reg2,
+				reg3,
+				reg4);*/
+
+
 		//if(kbhit())
 		{
 			keyscan = getSingleScancode();
@@ -721,14 +826,14 @@ void processSoundMuxTest(uint16_t card_base)
 			if((test_bits&TST_CHA)==0)
 			{
 				test_bits|=TST_CHA;
-				mix_ctrl&=~(1<<0);
+				mix_ctrl&=~AY_A_TONE_EN;
 				gotoxy(21, out_start+1);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_CHA;
-				mix_ctrl|=(1<<0);
+				mix_ctrl|=AY_A_TONE_EN;
 				gotoxy(21, out_start+1);
 				cprintf("DISABLED");
 			}
@@ -739,14 +844,14 @@ void processSoundMuxTest(uint16_t card_base)
 			if((test_bits&TST_CHB)==0)
 			{
 				test_bits|=TST_CHB;
-				mix_ctrl&=~(1<<1);
+				mix_ctrl&=~AY_B_TONE_EN;
 				gotoxy(21, out_start+2);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_CHB;
-				mix_ctrl|=(1<<1);
+				mix_ctrl|=AY_B_TONE_EN;
 				gotoxy(21, out_start+2);
 				cprintf("DISABLED");
 			}
@@ -757,14 +862,14 @@ void processSoundMuxTest(uint16_t card_base)
 			if((test_bits&TST_CHC)==0)
 			{
 				test_bits|=TST_CHC;
-				mix_ctrl&=~(1<<2);
+				mix_ctrl&=~AY_C_TONE_EN;
 				gotoxy(21, out_start+3);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_CHC;
-				mix_ctrl|=(1<<2);
+				mix_ctrl|=AY_C_TONE_EN;
 				gotoxy(21, out_start+3);
 				cprintf("DISABLED");
 			}
@@ -775,14 +880,14 @@ void processSoundMuxTest(uint16_t card_base)
 			if((test_bits&TST_MONO)==0)
 			{
 				test_bits|=TST_MONO;
-				port_ctrl|=(1<<4);
+				port_ctrl|=AY_IOB_MIX_MON;
 				gotoxy(21, out_start+7);
 				cprintf(" ENABLED");
 			}
 			else
 			{
 				test_bits&=~TST_MONO;
-				port_ctrl&=~(1<<4);
+				port_ctrl&=~AY_IOB_MIX_MON;
 				gotoxy(21, out_start+7);
 				cprintf("DISABLED");
 			}
@@ -790,45 +895,45 @@ void processSoundMuxTest(uint16_t card_base)
 		else if((keyscan=='c')||(keyscan=='C'))
 		{
 			// Channel C switch toggle.
-			if((test_bits&TST_COFF)==0)
+			if((test_bits&TST_CDMA)==0)
 			{
-				test_bits|=TST_COFF;
-				port_ctrl&=~(1<<7);
+				test_bits|=TST_CDMA;
+				port_ctrl&=~(AY_IOB_C_OUT|AY_IOB_DMA_DIS|AY_IOB_IRQ_DIS);
 				gotoxy(21, out_start+8);
-				cprintf(" ENABLED");
+				cprintf(" DMA REQ");
 			}
 			else
 			{
-				test_bits&=~TST_COFF;
-				port_ctrl|=(1<<7);
+				test_bits&=~TST_CDMA;
+				port_ctrl|=AY_IOB_C_OUT|AY_IOB_DMA_DIS|AY_IOB_IRQ_DIS;
 				gotoxy(21, out_start+8);
-				cprintf("DISABLED");
+				cprintf("   SOUND");
 			}
 		}
 		else if(keyscan=='-')
 		{
 			// Volume down.
-			if(volume_ctrl==0xFF)
+			if(volume_ctrl==VOL_100)
 			{
-				volume_ctrl=0xCC;
+				volume_ctrl = VOL_075;
 				gotoxy(21, out_start+9);
 				cprintf("     75%");
 			}
-			else if(volume_ctrl==0xCC)
+			else if(volume_ctrl==VOL_075)
 			{
-				volume_ctrl=0x88;
+				volume_ctrl = VOL_050;
 				gotoxy(21, out_start+9);
 				cprintf("     50%");
 			}
-			else if(volume_ctrl==0x88)
+			else if(volume_ctrl==VOL_050)
 			{
-				volume_ctrl=0x44;
+				volume_ctrl = VOL_025;
 				gotoxy(21, out_start+9);
 				cprintf("     25%");
 			}
 			else
 			{
-				volume_ctrl=0x00;
+				volume_ctrl = VOL_000;
 				gotoxy(21, out_start+9);
 				cprintf("      0%");
 			}
@@ -836,39 +941,39 @@ void processSoundMuxTest(uint16_t card_base)
 		else if(keyscan=='+')
 		{
 			// Volume up.
-			if(volume_ctrl==0x00)
+			if(volume_ctrl==VOL_000)
 			{
-				volume_ctrl=0x44;
+				volume_ctrl = VOL_025;
 				gotoxy(21, out_start+9);
 				cprintf("     25%");
 			}
-			else if(volume_ctrl==0x44)
+			else if(volume_ctrl==VOL_025)
 			{
-				volume_ctrl=0x88;
+				volume_ctrl = VOL_050;
 				gotoxy(21, out_start+9);
 				cprintf("     50%");
 			}
-			else if(volume_ctrl==0x88)
+			else if(volume_ctrl==VOL_050)
 			{
-				volume_ctrl=0xCC;
+				volume_ctrl = VOL_075;
 				gotoxy(21, out_start+9);
 				cprintf("     75%");
 			}
 			else
 			{
-				volume_ctrl=0xFF;
+				volume_ctrl = VOL_100;
 				gotoxy(21, out_start+9);
 				cprintf("    100%");
 			}
 		}
 		if(keyscan=='4')
 		{
-			pcm_data++;
-			if(pcm_data>=6)
+			pcm_idx++;
+			if(pcm_idx>=PCM_SEQ_SIZE)
 			{
-				pcm_data = 0;
+				pcm_idx = 0;
 			}
-			outportb(card_base+CSM_PCM1, pcm_sequence[pcm_data]);
+			outportb(card_base+CSM_PCM1, pcm_sequence[pcm_idx]);
 			gotoxy(21, out_start+4);
 			cprintf("UPDATING");
 		}
@@ -876,15 +981,16 @@ void processSoundMuxTest(uint16_t card_base)
 		{
 			gotoxy(21, out_start+4);
 			cprintf("STATIC  ");
+
 		}
 		if(keyscan=='5')
 		{
-			pcm_data++;
-			if(pcm_data>=6)
+			pcm_idx++;
+			if(pcm_idx>=PCM_SEQ_SIZE)
 			{
-				pcm_data = 0;
+				pcm_idx = 0;
 			}
-			outportb(card_base+CSM_PCM2, pcm_sequence[pcm_data]);
+			outportb(card_base+CSM_PCM2, pcm_sequence[pcm_idx]);
 			gotoxy(21, out_start+5);
 			cprintf("UPDATING");
 		}
@@ -948,10 +1054,12 @@ void processAddressSpamTest(uint16_t card_base)
 	gotoxy(1, 1);
 	// Print header.
 	printHeader();
+	// Print PSG type.
+	printAYType(card_base);
 	resetAY(card_base);
 	// Print help.
 	printf("\n\r\n\r[Esc]: back to main menu\n\r\n\r");
-	printf("Single sub-port addressing test.\n\r\n\r");
+	printf("Single sub-port addressing test.\n\r");
 	out_start = wherey();
 	gotoxy(1, out_start+1);
 	highvideo();
@@ -1042,7 +1150,7 @@ void processAddressSpamTest(uint16_t card_base)
 		else if(keyscan=='7')
 		{
 			// Write to IRQ clear flag.
-			outportb(card_base+CSM_IRQ_CLR, 0x00);
+			outportb(card_base+CSM_IRQ_CLR, DUMMY_WRITE);
 			keyscan = 0;
 		}
 		else if(keyscan=='8')
@@ -1071,11 +1179,111 @@ void processAddressSpamTest(uint16_t card_base)
 	}
 }
 
+// Setup DMA channels.
+void setupDMAChannels()
+{
+	uint32_t buf_addr;
+	uint16_t buf_len;
+	// Get buffer address and length.
+	buf_addr = FP_SEG(dma1_seq);
+	buf_addr = (buf_addr<<4) + FP_OFF(dma1_seq);
+	buf_len = DMA1_SEQ_SIZE;
+	// 8237 setup.
+	// Mask DMA channel 1.
+	outportb(DMA_03REG_MASK, (DMA_MASK_EN|DMA_CH1_SEL));
+	// Mask DMA channel 3.
+	outportb(DMA_03REG_MASK, (DMA_MASK_EN|DMA_CH3_SEL));
+	// Enable Single transfer forward reading DMA on channel 1.
+	outportb(DMA_03REG_MODE, (DMA_MODE_SGL|DMA_MODE_AUTO|DMA_MODE_RD|DMA_CH1_SEL));
+	// Set segment page address.
+	outportb(DMA_03REG_CH1PG, (uint8_t)(buf_addr>>16));
+	// Set buffer address.
+	outportb(DMA_03REG_RST, DUMMY_WRITE);
+	outportb(DMA_03REG_CH1ADR, (uint8_t)buf_addr);
+	outportb(DMA_03REG_CH1ADR, (uint8_t)(buf_addr>>8));
+	// Set buffer length.
+	outportb(DMA_03REG_RST, DUMMY_WRITE);
+	outportb(DMA_03REG_CH1CNT, (uint8_t)buf_len);
+	outportb(DMA_03REG_CH1CNT, (uint8_t)(buf_len>>8));
+	// Enable DMA on channel 1.
+	outportb(DMA_03REG_MASK, DMA_CH1_SEL);
+	// Acknowledge interrupt.
+	outportb(IRQ_CMD_BASE, IRQ_ACK_INT);
+}
+
+// Temporary handler for IRQ3.
+void interrupt csm_irq3(__CPPARGS)
+{
+	uint8_t temp_reg;
+	int3cnt++;
+	// Clear IRQ latch in CSM.
+	outportb(card_base+CSM_IRQ_CLR, DUMMY_WRITE);
+	// Acknowledge interrupt.
+	outportb(IRQ_CMD_BASE, IRQ_ACK_INT);
+
+	temp_reg = readAYReg(card_base, AY_REG_IO_B);
+	temp_reg |= (AY_IOB_DMA_DIS|AY_IOB_C_OUT);
+	writeAYReg(card_base, AY_REG_IO_B, temp_reg);
+
+	temp_reg = readAYReg(card_base, AY_REG_MIXER);
+	temp_reg |= (AY_C_TONE_EN);
+	writeAYReg(card_base, AY_REG_MIXER, temp_reg);
+}
+
+// Temporary handler for IRQ7.
+void interrupt csm_irq7(__CPPARGS)
+{
+	int7cnt++;
+	// Clear IRQ latch in CSM.
+	outportb(card_base+CSM_IRQ_CLR, DUMMY_WRITE);
+	// Acknowledge interrupt.
+	outportb(IRQ_CMD_BASE, IRQ_ACK_INT);
+}
+
+// Replace IRQ handlers used by CSM for testing.
+void saveIntHandlers()
+{
+	// Disable interrupts.
+	disable();
+	// Save IRQ control state.
+	old_irq_ctrl = inport(IRQ_CTRL_BASE);
+	old_irq3 = getvect(ISA_IRQ3);	// Save IRQ3 handler.
+	old_irq7 = getvect(ISA_IRQ7);	// Save IRQ7 handler.
+	// Set new handlers.
+	setvect(ISA_IRQ3, csm_irq3);
+	setvect(ISA_IRQ7, csm_irq7);
+	// Clear IRQ flag.
+	outportb(card_base+CSM_IRQ_CLR, DUMMY_WRITE);
+	// Allow IRQs for CSM.
+	outportb(IRQ_CTRL_BASE, old_irq_ctrl&(~(ISA_IRQ3_MASK|ISA_IRQ7_MASK)));
+	// Enable interrupts.
+	enable();
+}
+
+// Restore original IRQ handlers after testing.
+void restoreIntHandlers()
+{
+	// Disable interrupts.
+	disable();
+	// Restore original handlers.
+	setvect(ISA_IRQ3, old_irq3);
+	setvect(ISA_IRQ7, old_irq7);
+	// Restore IRQ control state.
+	outportb(IRQ_CTRL_BASE, old_irq_ctrl);
+	// Enable interrupts.
+	enable();
+}
+
+
 // Main function.
 int main(int argc, const char* argv[])
 {
 	uint8_t keyscan, out_start;
-	uint16_t card_base, in_base;
+	uint16_t in_base;
+
+	// Reset INT counters.
+	int3cnt = int7cnt = 0;
+
 	// Set default card address.
 	card_base = CSM_BASE_DEF;
 	// Prepare screen.
@@ -1110,29 +1318,41 @@ int main(int argc, const char* argv[])
 	keyscan = 0;
 	while(keyscan!=KBD_ESC_CODE)
 	{
+		// Main menu.
 		keyscan = processPageMain(card_base);
 		if((keyscan=='r')||(keyscan=='R'))
 		{
+			// Normal register list.
 			processAYStdRegTable(card_base);
 			keyscan = 0;
 		}
 		else if((keyscan=='e')||(keyscan=='E'))
 		{
+			// Out-of-bound and full fill register list.
 			processAYOvfRegTable(card_base);
 			keyscan = 0;
 		}
 		else if((keyscan=='s')||(keyscan=='S'))
 		{
+			// Setup DMA queue.
+			setupDMAChannels();
+			// Save current interrupt vectors.
+			saveIntHandlers();
+			// Sound channels and muxer/amplifier test.
 			processSoundMuxTest(card_base);
+			// Restore interrupt handlers.
+			restoreIntHandlers();
 			keyscan = 0;
 		}
 		else if((keyscan=='g')||(keyscan=='G'))
 		{
+			// Gamepad read test.
 			processGamepadTest(card_base);
 			keyscan = 0;
 		}
 		else if((keyscan=='d')||(keyscan=='D'))
 		{
+			// Single internal device register I/O test.
 			processAddressSpamTest(card_base);
 			keyscan = 0;
 		}
